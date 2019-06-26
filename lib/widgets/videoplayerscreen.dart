@@ -1,7 +1,12 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meeting_streaming/meeting_bloc.dart';
 import 'package:meeting_streaming/models/meeting_model.dart';
 import 'package:meeting_streaming/models/meeting_stream_model.dart';
 import 'package:video_player/video_player.dart';
+
+import 'material_controls.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   static const language = 'en';
@@ -19,24 +24,46 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
+  MeetingBloc _meetingBloc;
   VideoPlayerController _controller;
-  Future<void> _initializeVideoPlayerFuture;
+  ChewieController _chewieController;
 
   @override
   void initState() {
+    _meetingBloc = BlocProvider.of<MeetingBloc>(context);
     String _defaultUrl = _getUrl();
-    if(_defaultUrl != null){
+    if (_defaultUrl != null) {
       _controller = VideoPlayerController.network(_defaultUrl);
-      _initializeVideoPlayerFuture = _controller.initialize();
-      _controller.setLooping(true);
+      // _initializeVideoPlayerFuture = _controller.initialize();
+      // _controller.setLooping(true);
+      _chewieController = ChewieController(
+        videoPlayerController: _controller,
+        aspectRatio: 3 / 2,
+        autoPlay: true,
+        looping: true,
+        customControls: MaterialControls(),
+        // Try playing around with some of these other options:
+
+        // showControls: false,
+        // materialProgressColors: ChewieProgressColors(
+        //   playedColor: Colors.red,
+        //   handleColor: Colors.blue,
+        //   backgroundColor: Colors.grey,
+        //   bufferedColor: Colors.lightGreen,
+        // ),
+        // placeholder: Container(
+        //   color: Colors.grey,
+        // ),
+        // autoInitialize: true,
+      );
     }
     super.initState();
   }
 
-  String _getUrl({audioOnly:false,language:'en'}){
+  String _getUrl({audioOnly: false, language: 'en'}) {
     List<MeetingStreamModel> _meetingStreams = widget.meetingStreamModel;
-    for(MeetingStreamModel ms in _meetingStreams){
-      if(ms.Lang == language && ms.AudioOnly == audioOnly){
+    for (MeetingStreamModel ms in _meetingStreams) {
+      if (ms.Lang == language && ms.AudioOnly == audioOnly) {
         return ms.Url;
       }
     }
@@ -46,54 +73,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _chewieController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('Butterfly Video'),
-      // ),
-      // Use a FutureBuilder to display a loading spinner while waiting for the
-      // VideoPlayerController to finish initializing.
-      body: FutureBuilder(
-        future: _initializeVideoPlayerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the VideoPlayerController has finished initialization, use
-            // the data it provides to limit the aspect ratio of the video.
-            return AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              // Use the VideoPlayer widget to display the video.
-              child: VideoPlayer(_controller),
-            );
-          } else {
-            // If the VideoPlayerController is still initializing, show a
-            // loading spinner.
-            return Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Wrap the play or pause in a call to `setState`. This ensures the
-          // correct icon is shown.
-          setState(() {
-            // If the video is playing, pause it.
-            if (_controller.value.isPlaying) {
-              _controller.pause();
-            } else {
-              // If the video is paused, play it.
-              _controller.play();
-            }
-          });
-        },
-        // Display the correct icon depending on the state of the player.
-        child: Icon(
-          _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+    if (_chewieController == null) {
+      _meetingBloc.dispatch(FetchListEvent());
+    } else {
+      return WillPopScope(
+        child: Chewie(
+          controller: _chewieController,
         ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        onWillPop: () {
+          _meetingBloc.dispatch(FetchListEvent());
+        },
+      );
+    }
   }
 }
