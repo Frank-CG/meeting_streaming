@@ -1,64 +1,115 @@
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meeting_streaming/models/meeting_model.dart';
+import 'package:meeting_streaming/respositories/meeting_repository.dart';
+import 'package:meeting_streaming/widgets/meeting_card.dart';
+import 'package:meeting_streaming/widgets/videoplayerscreen.dart';
 
-void main() => runApp(MyApp());
+import 'meeting_bloc.dart';
+import 'simple_bloc_delegate.dart';
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+// void main() => runApp(MyApp());
+void main() {
+  BlocSupervisor.delegate = SimpleBlocDelegate();
+  final _meetingRepository = MeetingRepository();
+  runApp(App(
+    meetingRepository: _meetingRepository,
+  ));
+}
+
+class App extends StatefulWidget {
+  final MeetingRepository meetingRepository;
+
+  const App({Key key, @required this.meetingRepository}) : super(key: key);
+
+  @override
+  _AppState createState() => _AppState();
+}
+
+class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Meeting Streaming',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return BlocProviderTree(
+      blocProviders: <BlocProvider>[
+        BlocProvider<MeetingBloc>(
+          builder: (context) =>
+              MeetingBloc(meetingRepository: widget.meetingRepository),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Meeting Streaming',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: HomePage(),
       ),
-      home: HomePage(title: 'Welcome to ParlVU'),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  HomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
+  HomePage({Key key}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  int _counter = 0;
+  MeetingBloc _meetingBloc;
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _meetingBloc = BlocProvider.of<MeetingBloc>(context);
+    _meetingBloc.dispatch(FetchListEvent());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("June 18, 2019"),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+    return BlocBuilder(
+      bloc: _meetingBloc,
+      builder: (BuildContext context, MeetingState state) {
+        if (state is MeetingListIsLoaded) {
+          List<MeetingModel> meetings =
+              _meetingBloc.meetingRepository.meetingList;
+          return Scaffold(
+            appBar: AppBar(
+              title: Text("June 18, 2019"),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+            body: ListView.builder(
+              itemCount: meetings.length,
+              itemBuilder: (BuildContext context, int index) {
+                return MeetingCard(
+                  meetingModel: meetings[index],
+                );
+              },
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ),
+          );
+        } else if (state is MeetingListIsLoading) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text("June 18, 2019"),
+            ),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else if (state is MeetingStreamIsLoaded) {
+          return VideoPlayerScreen(
+            meetingModel: state.meetingModel,
+            meetingStreamModel: state.meetingStreamModel,
+          );
+        } else if (state is MeetingStreamIsLoading) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        } else {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+      },
     );
   }
 }
