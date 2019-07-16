@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
           return MaterialApp(
             title: '',
             theme: ThemeData(
-              dialogBackgroundColor: Colors.white60,
+              dialogBackgroundColor: Colors.white.withOpacity(0.6),
             ),
             home: VideoPlayerScreen(
               meetingModel: state.meetingModel,
