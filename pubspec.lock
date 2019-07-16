@@ -102,9 +102,11 @@ packages:
   chewie:
     dependency: "direct main"
     description:
-      path: "..\\locallibs\\chewie-0.9.7-subtitle"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "8032d3b21c00b8a1aa13a364dd17f40b63ddf1db"
+      url: "https://github.com/Frank-CG/chewie-0.9.7.git"
+    source: git
     version: "0.9.7"
   code_builder:
     dependency: transitive
@@ -481,9 +483,11 @@ packages:
   video_player:
     dependency: "direct main"
     description:
-      path: "..\\locallibs\\video_player-0.10.1-3-subtitles"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "3ecc68d5f5c3ad1b139efba295f877962c28dc48"
+      url: "https://github.com/Frank-CG/video_player-0.10.1-3.git"
+    source: git
     version: "0.10.1+3"
   watcher:
     dependency: transitive
