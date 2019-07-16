@@ -96,9 +96,19 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         } else if (state is MeetingStreamIsLoaded) {
-          return VideoPlayerScreen(
-            meetingModel: state.meetingModel,
-            meetingStreamModel: state.meetingStreamModel,
+          // return VideoPlayerScreen(
+          //   meetingModel: state.meetingModel,
+          //   meetingStreamModel: state.meetingStreamModel,
+          // );
+          return MaterialApp(
+            title: '',
+            theme: ThemeData(
+              dialogBackgroundColor: Colors.white60,
+            ),
+            home: VideoPlayerScreen(
+              meetingModel: state.meetingModel,
+              meetingStreamModel: state.meetingStreamModel,
+            ),
           );
         } else if (state is MeetingStreamIsLoading) {
           return Center(

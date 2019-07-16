@@ -6,6 +6,7 @@ import 'dart:async';
 // import 'package:chewie/src/utils.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:video_player/video_player.dart';
 
 import 'material_progress_bar.dart';
@@ -28,15 +29,24 @@ class _MaterialControlsState extends State<MaterialControls> {
   Timer _showTimer;
   Timer _showAfterExpandCollapseTimer;
   bool _dragging = false;
+  String subtitle = "";
 
-  final barHeight = 48.0;
+  final barHeight = 36.0;
   final marginSize = 5.0;
+
+  final exbarHeight = 36.0;
 
   VideoPlayerController controller;
   ChewieController chewieController;
 
   @override
   Widget build(BuildContext context) {
+    if (chewieController.showSubtitle) {
+      String newSubtitle = controller.value.subtitle;
+      if (subtitle != newSubtitle) {
+        subtitle = newSubtitle;
+      }
+    }
     if (_latestValue.hasError) {
       return chewieController.errorBuilder != null
           ? chewieController.errorBuilder(
@@ -68,7 +78,27 @@ class _MaterialControlsState extends State<MaterialControls> {
                     ),
                   )
                 : _buildHitArea(),
-            _buildBottomBar(context),
+            Stack(
+              alignment: AlignmentDirectional.bottomCenter,
+              children: <Widget>[
+                chewieController.showSubtitle && this.subtitle != ""
+                    ? Container(
+                        padding:
+                            EdgeInsets.only(bottom: 2.0, left: 2.0, right: 2.0),
+                        margin: EdgeInsets.only(bottom: 12.0),
+                        color: Colors.black.withOpacity(0.7),
+                        child: Text(
+                          this.subtitle,
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ))
+                    : Container(),
+                _buildBottomBar(context),
+              ],
+            )
           ],
         ),
       ),
@@ -111,25 +141,238 @@ class _MaterialControlsState extends State<MaterialControls> {
       opacity: _hideStuff ? 0.0 : 1.0,
       duration: Duration(milliseconds: 300),
       child: Container(
-        height: barHeight,
+        height: barHeight + exbarHeight,
         color: Theme.of(context).dialogBackgroundColor,
-        child: Row(
+        alignment: Alignment.bottomLeft,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _buildPlayPause(controller),
-            chewieController.isFullScreen
-                ? chewieController.isLive
-                    ? Expanded(child: const Text('LIVE'))
-                    : _buildPosition(iconColor)
-                : Container(),
-            chewieController.isLive ? const SizedBox() : _buildProgressBar(),
-            chewieController.allowMuting
-                ? _buildMuteButton(controller)
-                : Container(),
-            chewieController.allowFullScreen
-                ? _buildExpandButton()
-                : Container(),
-            _buildClosedCaptionButton(),
+            Container(
+              height: exbarHeight,
+              // color: Colors.yellow,
+              alignment: Alignment.bottomLeft,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  _buildClosedCaptionButton(),
+                  _buildTrackChangeButton(),
+                  Container(),
+                  _buildRewindButton(),
+                  _buildFastRewindButton(),
+                  Container(),
+                  Container(),
+                  Container(),
+                  _buildFastForwardButton(),
+                  _buildForwardButton(),
+                  Container(),
+                  Container(),
+                  Container(),
+                  Container(),
+                ],
+              ),
+            ),
+            Container(
+              height: barHeight,
+              child: Row(
+                children: <Widget>[
+                  _buildPlayPause(controller),
+                  chewieController.isFullScreen
+                      ? chewieController.isLive
+                          ? Expanded(child: const Text('LIVE'))
+                          : _buildPosition(iconColor)
+                      : Container(),
+                  chewieController.isLive
+                      ? const SizedBox()
+                      : _buildProgressBar(),
+                  chewieController.allowMuting
+                      ? _buildMuteButton(controller)
+                      : Container(),
+                  // if (controller.subtitleSource != null ||
+                  //     controller.value.subtitleList.length > 0)
+                  //   _buildCCButton(chewieController),
+                  chewieController.allowFullScreen
+                      ? _buildExpandButton()
+                      : Container(),
+                  // _buildClosedCaptionButton(),
+                ],
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildClosedCaptionButton() {
+    return GestureDetector(
+      onTap: () {
+        _cancelAndRestartTimer();
+        chewieController.showSubtitle = !chewieController.showSubtitle;
+        if (!controller.value.subtitleList.isEmpty &&
+            chewieController.showSubtitle == true) {
+          if (controller.value.subtitleList.length == 1) {
+            print("subtitle" + controller.value.subtitleList[0].toString());
+            controller.setSubtitles(controller.value.subtitleList[0].trackIndex,
+                controller.value.subtitleList[0].groupIndex);
+          } else {
+            Navigator.of(context).push<MaterialPageRoute>(MaterialPageRoute(
+              builder: (BuildContext context) => SubtitlePicker(controller),
+              fullscreenDialog: true,
+            ));
+          }
+        }
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.closed_caption,
+            color: chewieController.showSubtitle ? Colors.black : Colors.blueGrey,
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildTrackChangeButton() {
+    return GestureDetector(
+      onTap: () {
+        print("TrackChange Button is clicked.");
+        _restartTimer();
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.track_changes,
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildForwardButton() {
+    return GestureDetector(
+      onTap: () {
+        print("Forward Button is clicked.");
+        controller.seekTo(controller.value.position + Duration(seconds: 10));
+        _restartTimer();
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.arrow_forward_ios,
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildFastForwardButton() {
+    return GestureDetector(
+      onTap: () {
+        print("Fast Forward Button is clicked.");
+        controller.seekTo(controller.value.position + Duration(seconds: 60));
+        _restartTimer();
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.fast_forward,
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildRewindButton() {
+    return GestureDetector(
+      onTap: () {
+        print("Rewind Button is clicked.");
+        Duration moment = controller.value.position - Duration(seconds: 10);
+        controller.seekTo(moment.compareTo(Duration(seconds: 0)) > 0
+            ? moment
+            : Duration(seconds: 0));
+        _restartTimer();
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.arrow_back_ios,
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildFastRewindButton() {
+    return GestureDetector(
+      onTap: () {
+        print("Fast Rewind Button is clicked.");
+        Duration moment = controller.value.position - Duration(seconds: 60);
+        controller.seekTo(moment.compareTo(Duration(seconds: 0)) > 0
+            ? moment
+            : Duration(seconds: 0));
+        _restartTimer();
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Container(
+          height: barHeight,
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(left: 8.0, right: 4.0),
+          padding: EdgeInsets.only(
+            left: 12.0,
+            right: 12.0,
+          ),
+          child: Icon(
+            Icons.fast_rewind,
+          ),
         ),
       ),
     );
@@ -153,31 +396,6 @@ class _MaterialControlsState extends State<MaterialControls> {
               chewieController.isFullScreen
                   ? Icons.fullscreen_exit
                   : Icons.fullscreen,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  GestureDetector _buildClosedCaptionButton() {
-    return GestureDetector(
-      onTap: () {
-        print("CC Button is clicked.");
-      },
-      child: AnimatedOpacity(
-        opacity: _hideStuff ? 0.0 : 1.0,
-        duration: Duration(milliseconds: 300),
-        child: Container(
-          height: barHeight,
-          margin: EdgeInsets.only(right: 12.0),
-          padding: EdgeInsets.only(
-            left: 8.0,
-            right: 8.0,
-          ),
-          child: Center(
-            child: Icon(
-              Icons.closed_caption,
             ),
           ),
         ),
@@ -262,6 +480,50 @@ class _MaterialControlsState extends State<MaterialControls> {
     );
   }
 
+  GestureDetector _buildCCButton(
+    ChewieController chewieController,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        _cancelAndRestartTimer();
+        chewieController.showSubtitle = !chewieController.showSubtitle;
+        if (!controller.value.subtitleList.isEmpty &&
+            chewieController.showSubtitle == true) {
+          if (controller.value.subtitleList.length == 1) {
+            print("subtitle" + controller.value.subtitleList[0].toString());
+            controller.setSubtitles(controller.value.subtitleList[0].trackIndex,
+                controller.value.subtitleList[0].groupIndex);
+          } else {
+            Navigator.of(context).push<MaterialPageRoute>(MaterialPageRoute(
+              builder: (BuildContext context) => SubtitlePicker(controller),
+              fullscreenDialog: true,
+            ));
+          }
+        }
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: ClipRect(
+          child: Container(
+            child: Container(
+              height: barHeight,
+              padding: EdgeInsets.only(
+                left: 8.0,
+                right: 8.0,
+              ),
+              child: Icon(
+                Icons.closed_caption,
+                color:
+                    chewieController.showSubtitle ? Colors.blue : Colors.grey,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   GestureDetector _buildPlayPause(VideoPlayerController controller) {
     return GestureDetector(
       onTap: _playPause,
@@ -304,8 +566,15 @@ class _MaterialControlsState extends State<MaterialControls> {
     _startHideTimer();
 
     setState(() {
-      _hideStuff = false;
+      _hideStuff = !_hideStuff; //false;
     });
+  }
+
+  void _restartTimer() {
+    if (controller.value.isPlaying) {
+      _hideTimer?.cancel();
+      _startHideTimer();
+    }
   }
 
   Future<Null> _initialize() async {
@@ -399,6 +668,53 @@ class _MaterialControlsState extends State<MaterialControls> {
                   bufferedColor: Theme.of(context).backgroundColor,
                   backgroundColor: Theme.of(context).disabledColor),
         ),
+      ),
+    );
+  }
+}
+
+class SubtitlePicker extends StatefulWidget {
+  final VideoPlayerController controller;
+
+  SubtitlePicker(this.controller);
+
+  @override
+  _SubtitlePickerState createState() => _SubtitlePickerState();
+}
+
+class _SubtitlePickerState extends State<SubtitlePicker> {
+  VideoPlayerController controller;
+  List<Subtitle> subtitleList;
+
+  void initState() {
+    super.initState();
+    controller = widget.controller;
+    subtitleList = widget.controller.value.subtitleList;
+  }
+
+  Widget _buildListViewItem(BuildContext context, int index) {
+    Subtitle subtitle = subtitleList[index];
+    return ListTile(
+      title: Text(subtitle.label),
+      onTap: () {
+        if (subtitle.groupIndex != null && subtitle.trackIndex != null) {
+          controller.setSubtitles(subtitle.trackIndex, subtitle.groupIndex);
+        }
+        Navigator.of(context).pop();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Veldu texta'),
+      ),
+      body: ListView.builder(
+        key: Key('subtitle-list'),
+        itemBuilder: _buildListViewItem,
+        itemCount: subtitleList.length,
       ),
     );
   }

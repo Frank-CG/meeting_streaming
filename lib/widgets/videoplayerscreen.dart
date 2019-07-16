@@ -33,7 +33,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _meetingBloc = BlocProvider.of<MeetingBloc>(context);
     String _defaultUrl = _getUrl();
     if (_defaultUrl != null) {
+      print("_defaultUrl=$_defaultUrl");
       _controller = VideoPlayerController.network(_defaultUrl);
+      
       // _initializeVideoPlayerFuture = _controller.initialize();
       // _controller.setLooping(true);
       _chewieController = ChewieController(
