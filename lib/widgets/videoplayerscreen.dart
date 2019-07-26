@@ -35,7 +35,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (_defaultUrl != null) {
       print("_defaultUrl=$_defaultUrl");
       _controller = VideoPlayerController.network(_defaultUrl);
-      
+
       // _initializeVideoPlayerFuture = _controller.initialize();
       // _controller.setLooping(true);
       _chewieController = ChewieController(

@@ -55,6 +55,7 @@ class MeetingStreamIsLoaded extends MeetingState {
   MeetingStreamIsLoaded({@required this.meetingModel, @required this.meetingStreamModel});
 }
 
+
 @immutable
 abstract class MeetingEvent extends Equatable {
   MeetingEvent([List props = const []]) : super(props);
@@ -71,6 +72,5 @@ class FetchStreamEvent extends MeetingEvent {
 
   FetchStreamEvent({@required this.meetingModel});
 }
-
 
 

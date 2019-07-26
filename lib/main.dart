@@ -1,13 +1,18 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meeting_streaming/app_conifg.dart';
 import 'package:meeting_streaming/models/meeting_model.dart';
+import 'package:meeting_streaming/navigate_bloc.dart';
 import 'package:meeting_streaming/respositories/meeting_repository.dart';
 import 'package:meeting_streaming/widgets/meeting_card.dart';
+import 'package:meeting_streaming/widgets/meeting_page.dart';
 import 'package:meeting_streaming/widgets/videoplayerscreen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'meeting_bloc.dart';
 import 'simple_bloc_delegate.dart';
+import 'widgets/notification_page.dart';
 
 // void main() => runApp(MyApp());
 void main() {
@@ -30,11 +35,15 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
+    
     return BlocProviderTree(
       blocProviders: <BlocProvider>[
         BlocProvider<MeetingBloc>(
           builder: (context) =>
               MeetingBloc(meetingRepository: widget.meetingRepository),
+        ),
+        BlocProvider<NavBloc>(
+          builder: (BuildContext context) => NavBloc(),
         ),
       ],
       child: MaterialApp(
@@ -56,69 +65,49 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  MeetingBloc _meetingBloc;
+  NavBloc _navBloc;
 
   @override
   void initState() {
     super.initState();
-    _meetingBloc = BlocProvider.of<MeetingBloc>(context);
-    _meetingBloc.dispatch(FetchListEvent());
+    _navBloc = BlocProvider.of<NavBloc>(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    AppConfig.instance = AppConfig()..init(context);
+
     return BlocBuilder(
-      bloc: _meetingBloc,
-      builder: (BuildContext context, MeetingState state) {
-        if (state is MeetingListIsLoaded) {
-          List<MeetingModel> meetings =
-              _meetingBloc.meetingRepository.meetingList;
-          return Scaffold(
-            appBar: AppBar(
-              title: Text("June 18, 2019"),
-            ),
-            body: ListView.builder(
-              itemCount: meetings.length,
-              itemBuilder: (BuildContext context, int index) {
-                return MeetingCard(
-                  meetingModel: meetings[index],
-                );
-              },
-            ),
-          );
-        } else if (state is MeetingListIsLoading) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text("June 18, 2019"),
-            ),
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        } else if (state is MeetingStreamIsLoaded) {
-          // return VideoPlayerScreen(
-          //   meetingModel: state.meetingModel,
-          //   meetingStreamModel: state.meetingStreamModel,
-          // );
-          return MaterialApp(
-            title: '',
-            theme: ThemeData(
-              dialogBackgroundColor: Colors.white.withOpacity(0.6),
-            ),
-            home: VideoPlayerScreen(
-              meetingModel: state.meetingModel,
-              meetingStreamModel: state.meetingStreamModel,
-            ),
-          );
-        } else if (state is MeetingStreamIsLoading) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        } else {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
+      bloc: _navBloc,
+      builder: (BuildContext context, NavState state) {
+        Widget _bodyWidget;
+        switch (state.pageName) {
+          case RouteName.Meeting:
+            _bodyWidget = MeetingPage(); 
+            break;
+          case RouteName.Notification:
+            _bodyWidget = PushMessagingExample();
+            break;
+          default:
+            _bodyWidget = Container();
+            break;
         }
+        final _barItems = state.pageNavBarItem;
+        final _bottomBarWidget = BottomNavigationBar(
+                onTap: (int index) {
+                  _navBloc.dispatch(NavTo(
+                      pageName: RouteName.values[index],
+                      previousPageName: state.pageName));
+                },
+                showSelectedLabels: false,
+                showUnselectedLabels: false,
+                items: _barItems,
+              );
+
+        return Scaffold(
+          body: _bodyWidget,
+          bottomNavigationBar: _bottomBarWidget,
+        );
       },
     );
   }

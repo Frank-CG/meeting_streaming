@@ -66,39 +66,53 @@ class _MaterialControlsState extends State<MaterialControls> {
       onTap: () => _cancelAndRestartTimer(),
       child: AbsorbPointer(
         absorbing: _hideStuff,
-        child: Column(
+        child: Stack(
           children: <Widget>[
-            _latestValue != null &&
-                        !_latestValue.isPlaying &&
-                        _latestValue.duration == null ||
-                    _latestValue.isBuffering
-                ? const Expanded(
-                    child: const Center(
-                      child: const CircularProgressIndicator(),
-                    ),
-                  )
-                : _buildHitArea(),
-            Stack(
-              alignment: AlignmentDirectional.bottomCenter,
+            Column(
               children: <Widget>[
-                chewieController.showSubtitle && this.subtitle != ""
-                    ? Container(
-                        padding:
-                            EdgeInsets.only(bottom: 2.0, left: 2.0, right: 2.0),
-                        margin: EdgeInsets.only(bottom: 12.0),
-                        color: Colors.black.withOpacity(0.7),
-                        child: Text(
-                          this.subtitle,
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        ))
-                    : Container(),
-                _buildBottomBar(context),
+                _latestValue != null &&
+                            !_latestValue.isPlaying &&
+                            _latestValue.duration == null ||
+                        _latestValue.isBuffering
+                    ? const Expanded(
+                        child: const Center(
+                          child: const CircularProgressIndicator(),
+                        ),
+                      )
+                    : _buildHitArea(),
+                Stack(
+                  alignment: AlignmentDirectional.bottomCenter,
+                  children: <Widget>[
+                    chewieController.showSubtitle && this.subtitle != ""
+                        ? Container(
+                            padding: EdgeInsets.only(
+                                bottom: 2.0, left: 2.0, right: 2.0),
+                            margin: EdgeInsets.only(bottom: 12.0),
+                            color: Colors.black.withOpacity(0.7),
+                            child: Text(
+                              this.subtitle,
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ))
+                        : Container(),
+                    _buildBottomBar(context),
+                  ],
+                )
               ],
-            )
+            ),
+            Positioned(
+              top: 16.0,
+              right: 16.0,
+              child: Container(
+                color: Colors.white30,
+                height: 80,
+                width: 100,
+                child: Text("Just for testing.", style: TextStyle(color: Colors.black, fontSize: 18.0),),
+              ),
+            ),
           ],
         ),
       ),
@@ -236,7 +250,8 @@ class _MaterialControlsState extends State<MaterialControls> {
           ),
           child: Icon(
             Icons.closed_caption,
-            color: chewieController.showSubtitle ? Colors.black : Colors.blueGrey,
+            color:
+                chewieController.showSubtitle ? Colors.black : Colors.blueGrey,
           ),
         ),
       ),
