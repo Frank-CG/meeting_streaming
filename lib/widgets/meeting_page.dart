@@ -30,20 +30,20 @@ class _MeetingPageState extends State<MeetingPage> {
         if (state is MeetingListIsLoaded) {
           List<MeetingModel> meetings =
               _meetingBloc.meetingRepository.meetingList;
-          _meetingBloc.dispatch(FetchStreamEvent(meetingModel: meetings[0]));
-          // return Scaffold(
-          //   appBar: AppBar(
-          //     title: Text("June 18, 2019"),
-          //   ),
-          //   body: ListView.builder(
-          //     itemCount: meetings.length,
-          //     itemBuilder: (BuildContext context, int index) {
-          //       return MeetingCard(
-          //         meetingModel: meetings[index],
-          //       );
-          //     },
-          //   ),
-          // );
+          // _meetingBloc.dispatch(FetchStreamEvent(meetingModel: meetings[0]));
+          return Scaffold(
+            appBar: AppBar(
+              title: Text("June 18, 2019"),
+            ),
+            body: ListView.builder(
+              itemCount: meetings.length,
+              itemBuilder: (BuildContext context, int index) {
+                return MeetingCard(
+                  meetingModel: meetings[index],
+                );
+              },
+            ),
+          );
         } else if (state is MeetingListIsLoading) {
           return Scaffold(
             appBar: AppBar(
