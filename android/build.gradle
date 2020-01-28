@@ -17,6 +17,9 @@ allprojects {
         google()
         jcenter()
     }
+    configurations.all {
+        resolutionStrategy.force "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0"
+    }
 }
 
 rootProject.buildDir = '../build'
